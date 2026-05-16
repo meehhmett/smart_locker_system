@@ -1,0 +1,28 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "smart-locker-84032",
+          "appId": "1:871986626469:android:8ba70fea160db56aeff24c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "smart-locker-84032",
+          "configurations": {
+            "android": "1:871986626469:android:8ba70fea160db56aeff24c",
+            "ios": "1:871986626469:ios:6551245f3a83bb01eff24c",
+            "macos": "1:871986626469:ios:6551245f3a83bb01eff24c",
+            "web": "1:871986626469:web:6792493483ed0ddceff24c",
+            "windows": "1:871986626469:web:0623d2a0d3f7e68feff24c"
+          }
+        }
+      }
+    }
+  }
+}

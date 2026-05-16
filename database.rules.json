@@ -1,0 +1,42 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      ".indexOn": ["organizationId"],
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'organizationAdmin')",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (auth.uid === $uid || (newData.exists() && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'organizationAdmin') && (newData.child('organizationId').val() === root.child('users').child(auth.uid).child('organizationId').val() || data.child('organizationId').val() === root.child('users').child(auth.uid).child('organizationId').val() || data.child('organizations').child(root.child('users').child(auth.uid).child('organizationId').val()).exists())))"
+      }
+    },
+    "organizations": {
+      ".indexOn": ["joinCode"],
+      ".read": "auth != null && query.orderByChild === 'joinCode'",
+      "$organizationId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('organizationId').val() === $organizationId",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'organizationAdmin') && root.child('users').child(auth.uid).child('organizationId').val() === $organizationId",
+        "lockers": {
+          "$lockerId": {
+            ".read": "auth != null && root.child('users').child(auth.uid).child('organizationId').val() === $organizationId",
+            ".write": "auth != null && root.child('users').child(auth.uid).child('organizationId').val() === $organizationId"
+          }
+        }
+      }
+    },
+    "activityLogs": {
+      ".indexOn": ["organizationId", "createdAtMillis"],
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'organizationAdmin') && query.orderByChild === 'organizationId' && query.equalTo === root.child('users').child(auth.uid).child('organizationId').val()",
+      "$logId": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('organizationId').val() === newData.child('organizationId').val()"
+      }
+    },
+    "organizationRequests": {
+      ".indexOn": ["organizationId", "userId"],
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'organizationAdmin') && query.orderByChild === 'organizationId' && query.equalTo === root.child('users').child(auth.uid).child('organizationId').val()",
+      "$requestId": {
+        ".write": "auth != null && (auth.uid === newData.child('userId').val() || ((root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'organizationAdmin') && root.child('users').child(auth.uid).child('organizationId').val() === newData.child('organizationId').val()))"
+      }
+    }
+  }
+}

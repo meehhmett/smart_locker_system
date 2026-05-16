@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "871986626469",
+    "firebase_url": "https://smart-locker-84032-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "smart-locker-84032",
+    "storage_bucket": "smart-locker-84032.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:871986626469:android:8ba70fea160db56aeff24c",
+        "android_client_info": {
+          "package_name": "com.example.smart_locker_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVm3UGuDyfo8gznmyadghbNwKdpL9Ofv0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
