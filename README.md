@@ -1,6 +1,8 @@
 # smart_locker_app
 
-A new Flutter project.
+Ağınızdaki tüm cihazların erişimine açmak için : 
+flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080 --release
+kullanabilirsiniz.
 
 ## Getting Started
 
