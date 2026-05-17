@@ -43,6 +43,14 @@ String signedMoneyText(num amount) {
   return '+ TL $rounded';
 }
 
+// ESP32 expects compact uppercase RFID values without separators.
+String normalizedRfidUid(dynamic value) {
+  return readable(
+    value,
+    '',
+  ).replaceAll(RegExp('[^A-Za-z0-9]'), '').toUpperCase();
+}
+
 bool isAdminRole(dynamic value) {
   final role = value?.toString().toLowerCase() ?? '';
   return role == 'admin' || role == 'organizationadmin';
@@ -193,7 +201,7 @@ MyLockerResult? findMyLocker(dynamic rawLockers, String userId) {
   }
   for (final entry in rawLockers.entries) {
     final data = safeMap(entry.value);
-    if (data['ownerId'] == userId) {
+    if (data['ownerId'] == userId || data['ownerUid'] == userId) {
       return MyLockerResult(key: entry.key.toString(), data: data);
     }
   }

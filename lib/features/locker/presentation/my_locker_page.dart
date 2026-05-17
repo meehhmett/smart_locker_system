@@ -20,6 +20,42 @@ class _MyLockerPageState extends State<MyLockerPage> {
 
   String get userId => widget.userId;
 
+  Future<void> requestUnlock({
+    required BuildContext context,
+    required String lockerKey,
+    required Map<String, dynamic> data,
+  }) async {
+    final organizationId = organizationIdOf(data);
+    final status = readable(data['status'], '');
+    final ownerUid = readable(data['ownerUid'] ?? data['ownerId'], '');
+    if (status != 'rented' || ownerUid != userId) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Locker cannot be opened')),
+        );
+      }
+      return;
+    }
+    await FirebaseDatabase.instance
+        .ref(
+          '${organizationLockerPath(organizationId, lockerKey)}/unlockRequest',
+        )
+        .set(true);
+    await ActivityLogService.write(
+      organizationId: organizationId,
+      actorId: userId,
+      targetUserId: userId,
+      lockerKey: lockerKey,
+      type: 'locker_unlock_requested',
+      message: 'Locker unlock requested from app',
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Unlock request sent')));
+    }
+  }
+
   Future<void> releaseLocker({
     required BuildContext context,
     required String lockerKey,
@@ -158,6 +194,13 @@ class _MyLockerPageState extends State<MyLockerPage> {
       'status': 'available',
       'maintenance': false,
       'ownerId': '',
+      'ownerUid': '',
+      'allowedRfidUID': '0',
+      'lockState': 'locked',
+      'unlockRequest': false,
+      'rentalStartAt': null,
+      'rentalEndAt': null,
+      'rentalEndAtIso': null,
       'command': 'none',
       'plan': '',
       'duration': 0,
@@ -296,6 +339,13 @@ class _MyLockerPageState extends State<MyLockerPage> {
               final data = myLocker.data;
               final penalty = calculatePenalty(data);
               final lockerNumber = lockerIdFromKey(myLocker.key);
+              final ownerUid = readable(
+                data['ownerUid'] ?? data['ownerId'],
+                '',
+              );
+              final canRequestUnlock =
+                  data['status'] == 'rented' && ownerUid == userId;
+              final lockState = readable(data['lockState'], 'locked');
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(18),
                 child: Column(
@@ -327,7 +377,16 @@ class _MyLockerPageState extends State<MyLockerPage> {
                                 InfoRow(
                                   left: 'Status',
                                   right: readable(data['status'], '-'),
-                                  green: data['status'] == 'in_use',
+                                  green:
+                                      data['status'] == 'in_use' ||
+                                      data['status'] == 'rented',
+                                ),
+                                InfoRow(
+                                  left: 'Lock State',
+                                  right: lockState == 'unlocked'
+                                      ? 'Unlocked / A\u00e7\u0131k'
+                                      : 'Locked / Kilitli',
+                                  green: lockState == 'unlocked',
                                 ),
                                 InfoRow(
                                   left: 'Plan',
@@ -380,6 +439,34 @@ class _MyLockerPageState extends State<MyLockerPage> {
                             ),
                           ),
                           const SizedBox(height: 18),
+                          if (canRequestUnlock) ...[
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: HoverScale(
+                                child: ElevatedButton.icon(
+                                  onPressed: () => requestUnlock(
+                                    context: context,
+                                    lockerKey: myLocker.key,
+                                    data: data,
+                                  ),
+                                  style: purpleButtonStyle(),
+                                  icon: const Icon(
+                                    Icons.lock_open_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  label: const Text(
+                                    'Open Locker',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           SizedBox(
                             width: double.infinity,
                             height: 52,

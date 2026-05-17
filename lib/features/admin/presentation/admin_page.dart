@@ -248,11 +248,10 @@ class _SummaryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeRentals = lockers
-        .where(
-          (entry) => readable(safeMap(entry.value)['ownerId'], '').isNotEmpty,
-        )
-        .length;
+    final activeRentals = lockers.where((entry) {
+      final locker = safeMap(entry.value);
+      return readable(locker['ownerId'] ?? locker['ownerUid'], '').isNotEmpty;
+    }).length;
     final totalRevenue = lockers.fold<int>(
       0,
       (sum, entry) => sum + toInt(safeMap(entry.value)['totalPaid']),
@@ -746,7 +745,10 @@ class _LockerManagementCard extends StatelessWidget {
               runSpacing: 10,
               children: sortedLockers.map((entry) {
                 final locker = safeMap(entry.value);
-                final inUse = readable(locker['ownerId'], '').isNotEmpty;
+                final inUse = readable(
+                  locker['ownerId'] ?? locker['ownerUid'],
+                  '',
+                ).isNotEmpty;
                 final maintenance =
                     locker['maintenance'] == true ||
                     readable(locker['status'], '').toLowerCase() ==
@@ -860,7 +862,7 @@ class _RentalsCard extends StatelessWidget {
     };
     final rentals = lockers.where((entry) {
       final locker = safeMap(entry.value);
-      return readable(locker['ownerId'], '').isNotEmpty;
+      return readable(locker['ownerId'] ?? locker['ownerUid'], '').isNotEmpty;
     }).toList();
 
     return cardContainer(
@@ -877,7 +879,12 @@ class _RentalsCard extends StatelessWidget {
           else
             ...rentals.map((entry) {
               final locker = safeMap(entry.value);
-              final owner = usersById[readable(locker['ownerId'], '')] ?? {};
+              final owner =
+                  usersById[readable(
+                    locker['ownerId'] ?? locker['ownerUid'],
+                    '',
+                  )] ??
+                  {};
               final ownerName =
                   '${readable(owner['name'], '')} ${readable(owner['surname'], '')}'
                       .trim();
@@ -1422,7 +1429,10 @@ List<String> _lockerKeysFromInput(
   List<MapEntry<String, dynamic>> lockers,
 ) {
   final editable = lockers
-      .where((entry) => readable(safeMap(entry.value)['ownerId'], '').isEmpty)
+      .where((entry) {
+        final locker = safeMap(entry.value);
+        return readable(locker['ownerId'] ?? locker['ownerUid'], '').isEmpty;
+      })
       .map((entry) => entry.key)
       .toSet();
   final keys = <String>{};
@@ -1970,6 +1980,13 @@ Future<void> _removeOrganizationUser({
       final basePath = 'organizations/$organizationId/lockers/${child.key}';
       updates['$basePath/status'] = 'available';
       updates['$basePath/ownerId'] = '';
+      updates['$basePath/ownerUid'] = '';
+      updates['$basePath/allowedRfidUID'] = '0';
+      updates['$basePath/lockState'] = 'locked';
+      updates['$basePath/unlockRequest'] = false;
+      updates['$basePath/rentalStartAt'] = null;
+      updates['$basePath/rentalEndAt'] = null;
+      updates['$basePath/rentalEndAtIso'] = null;
       updates['$basePath/requestedAt'] = null;
       updates['$basePath/endsAt'] = null;
       updates['$basePath/plan'] = null;
@@ -2230,6 +2247,12 @@ Future<void> _showAddLockerDialog({
                       'status': 'available',
                       'maintenance': false,
                       'ownerId': '',
+                      'ownerUid': '',
+                      'allowedRfidUID': '0',
+                      'lockState': 'locked',
+                      'unlockRequest': false,
+                      'rentalStartAt': null,
+                      'rentalEndAt': null,
                       'organizationId': organizationId,
                       'organizationName': organizationName,
                       'organizationType': organizationTypeOf(organization),

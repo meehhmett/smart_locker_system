@@ -251,7 +251,11 @@ class _LockerHomePageState extends State<LockerHomePage> {
                     : width >= 680
                     ? 3
                     : 2;
-                final aspectRatio = width >= 680 ? 0.82 : 0.72;
+                final aspectRatio = width >= 1000
+                    ? 0.78
+                    : width >= 680
+                    ? 0.74
+                    : 0.62;
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -566,7 +570,8 @@ class _LockerHomePageState extends State<LockerHomePage> {
     final status = readable(data['status'], 'available');
     final maintenance =
         data['maintenance'] == true || status.toLowerCase() == 'maintenance';
-    final ownerId = readable(data['ownerId'], '');
+    final ownerId = readable(data['ownerId'] ?? data['ownerUid'], '');
+    final lockState = readable(data['lockState'], 'locked');
     final mine = ownerId == userId;
     final available = status == 'available' && !maintenance && ownerId.isEmpty;
 
@@ -581,7 +586,7 @@ class _LockerHomePageState extends State<LockerHomePage> {
       label = 'Maintenance';
       labelBg = const Color(0xff4a3a1f);
       labelText = const Color(0xffffc857);
-    } else if (status == 'in_use' || ownerId.isNotEmpty) {
+    } else if (status == 'in_use' || status == 'rented' || ownerId.isNotEmpty) {
       label = 'In Use';
       labelBg = const Color(0xff522636);
       labelText = const Color(0xffff6f8e);
@@ -590,7 +595,7 @@ class _LockerHomePageState extends State<LockerHomePage> {
     return HoverScale(
       scale: available ? 1.025 : 1.01,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: const Color(0xff141824),
           borderRadius: BorderRadius.circular(18),
@@ -603,16 +608,16 @@ class _LockerHomePageState extends State<LockerHomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             iconCircle(mine ? Icons.lock_open_rounded : Icons.lock),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
               'Locker $id',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 19,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -628,6 +633,20 @@ class _LockerHomePageState extends State<LockerHomePage> {
                 ),
               ),
             ),
+            if (mine) ...[
+              const SizedBox(height: 6),
+              Text(
+                lockState == 'unlocked'
+                    ? 'Unlocked / A\u00e7\u0131k'
+                    : 'Locked / Kilitli',
+                style: TextStyle(
+                  color: lockState == 'unlocked'
+                      ? const Color(0xff7ce78c)
+                      : Colors.white38,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
             const Spacer(),
             Text(
               toInt(data['hourlyPrice']) == 0 ? 'Free locker' : 'Price from',
@@ -652,10 +671,10 @@ class _LockerHomePageState extends State<LockerHomePage> {
                 ],
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 46,
               child: ElevatedButton(
                 onPressed: available
                     ? () => Navigator.push(
@@ -701,7 +720,7 @@ class _LockerHomePageState extends State<LockerHomePage> {
       stream: FirebaseDatabase.instance.ref('users/$userId').onValue,
       builder: (context, snapshot) {
         final user = safeMap(snapshot.data?.snapshot.value);
-        final rfidUid = readable(user['rfidUid'], '-');
+        final rfidUid = readable(user['rfidUid'] ?? user['rfidUID'], '-');
         final rfidStatus = readable(
           user['rfidStatus'],
           rfidUid == '-' ? 'Not connected' : 'Connected',
@@ -785,11 +804,12 @@ class _LockerHomePageState extends State<LockerHomePage> {
                 child: OutlinedButton(
                   onPressed: () async {
                     final now = DateTime.now().toIso8601String();
+                    final uid = 'RFID-${DateTime.now().millisecondsSinceEpoch}';
                     await FirebaseDatabase.instance
                         .ref('users/$userId')
                         .update({
-                          'rfidUid':
-                              'RFID-${DateTime.now().millisecondsSinceEpoch}',
+                          'rfidUid': uid,
+                          'rfidUID': uid,
                           'rfidStatus': 'Connected',
                           'rfidRegisteredAt': now,
                           'rfidLastSeenAt': now,
@@ -873,7 +893,9 @@ class _LockerHomePageState extends State<LockerHomePage> {
                         InfoRow(
                           left: 'Status',
                           right: readable(info['status'], '-'),
-                          green: info['status'] == 'in_use',
+                          green:
+                              info['status'] == 'in_use' ||
+                              info['status'] == 'rented',
                         ),
                         InfoRow(
                           left: 'Command',

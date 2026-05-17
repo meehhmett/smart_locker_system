@@ -53,6 +53,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'status': 'active',
         'balance': 0,
         'rfidUid': '',
+        'rfidUID': '',
         'rfidStatus': 'not_connected',
         'rfidRegisteredAt': '',
         'rfidLastSeenAt': '',

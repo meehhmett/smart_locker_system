@@ -11,8 +11,10 @@ class RfidPage extends StatelessWidget {
 
   Future<void> connectRfid() async {
     final now = DateTime.now().toIso8601String();
+    final uid = 'RFID-${DateTime.now().millisecondsSinceEpoch}';
     await FirebaseDatabase.instance.ref('users/$userId').update({
-      'rfidUid': 'RFID-${DateTime.now().millisecondsSinceEpoch}',
+      'rfidUid': uid,
+      'rfidUID': uid,
       'rfidStatus': 'Connected',
       'rfidRegisteredAt': now,
       'rfidLastSeenAt': now,
@@ -27,7 +29,7 @@ class RfidPage extends StatelessWidget {
         stream: FirebaseDatabase.instance.ref('users/$userId').onValue,
         builder: (context, snapshot) {
           final user = safeMap(snapshot.data?.snapshot.value);
-          final rfidUid = readable(user['rfidUid'], '-');
+          final rfidUid = readable(user['rfidUid'] ?? user['rfidUID'], '-');
           final rfidStatus = readable(
             user['rfidStatus'],
             rfidUid == '-' ? 'Not connected' : 'Connected',

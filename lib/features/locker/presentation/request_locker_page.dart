@@ -48,6 +48,27 @@ class _RequestLockerPageState extends State<RequestLockerPage> {
   int get discountAmount => (subtotal * discountRate).round();
   int get total => subtotal - discountAmount;
 
+  Future<bool> deductBalanceIfNeeded(DatabaseReference db, int amount) async {
+    if (amount <= 0) return true;
+    final balanceRef = db.child('users/$userId/balance');
+    final result = await balanceRef.runTransaction((currentValue) {
+      final currentBalance = toInt(currentValue);
+      if (currentBalance < amount) {
+        return Transaction.abort();
+      }
+      return Transaction.success(currentBalance - amount);
+    });
+    return result.committed;
+  }
+
+  Future<void> refundBalanceIfNeeded(DatabaseReference db, int amount) async {
+    if (amount <= 0) return;
+    final balanceRef = db.child('users/$userId/balance');
+    await balanceRef.runTransaction((currentValue) {
+      return Transaction.success(toInt(currentValue) + amount);
+    });
+  }
+
   @override
   void dispose() {
     couponController.dispose();
@@ -63,6 +84,13 @@ class _RequestLockerPageState extends State<RequestLockerPage> {
       final userSnap = await db.child('users/$userId').get();
       final balance = toInt(balanceSnap.value);
       final userData = safeMap(userSnap.value);
+      final rfidUid = normalizedRfidUid(
+        userData['rfidUID'] ?? userData['rfidUid'],
+      );
+      if (rfidUid.isEmpty || rfidUid == '0') {
+        showMessage('RFID kart\u0131n\u0131z tan\u0131ml\u0131 de\u011fil');
+        return;
+      }
       final organizationId = organizationIdOf(userData);
       if (organizationId.isEmpty) {
         showMessage('Join an organization before requesting a locker');
@@ -89,7 +117,10 @@ class _RequestLockerPageState extends State<RequestLockerPage> {
         );
         return;
       }
-      final ownerId = readable(lockerData['ownerId'], '');
+      final ownerId = readable(
+        lockerData['ownerId'] ?? lockerData['ownerUid'],
+        '',
+      );
       final lockerOrganizationId = organizationIdOf(lockerData);
       final available =
           lockerData['status'] == 'available' &&
@@ -109,34 +140,70 @@ class _RequestLockerPageState extends State<RequestLockerPage> {
       }
       final now = DateTime.now();
       final endsAt = calculateEndDate(now, selectedPlan, duration);
-      if (total > 0) {
-        await db.child('users/$userId').update({'balance': balance - total});
+      final balanceDeducted = await deductBalanceIfNeeded(db, total);
+      if (!balanceDeducted) {
+        showMessage('Insufficient balance');
+        return;
       }
-      await db
-          .child(organizationLockerPath(organizationId, widget.lockerKey))
-          .update({
-            'status': 'in_use',
-            'maintenance': false,
-            'ownerId': userId,
-            'organizationId': organizationId,
-            'organizationName': readable(
-              organizationData['name'],
-              organizationNameOf(userData),
-            ),
-            'hourlyPrice': organizationHourlyPrice(organizationData),
-            'organizationType': organizationTypeOf(organizationData),
-            'command': 'none',
-            'plan': selectedPlan,
-            'duration': duration,
-            'requestedAt': now.toIso8601String(),
-            'endsAt': endsAt.toIso8601String(),
-            'totalPaid': total,
-            'subtotal': subtotal,
-            'discount': discountAmount,
-            'coupon': appliedCoupon,
-            'penaltyPaid': 0,
-            'lastPenaltyCalculatedAt': now.toIso8601String(),
-          });
+      final lockerRef = db.child(
+        organizationLockerPath(organizationId, widget.lockerKey),
+      );
+      final rentalResult = await lockerRef.runTransaction((currentValue) {
+        final currentLocker = safeMap(currentValue);
+        final currentOwnerId = readable(
+          currentLocker['ownerId'] ?? currentLocker['ownerUid'],
+          '',
+        );
+        final currentStatus = readable(currentLocker['status'], 'available');
+        final currentMaintenance =
+            currentLocker['maintenance'] == true ||
+            currentStatus.toLowerCase() == 'maintenance';
+        final currentOrganizationId = organizationIdOf(currentLocker);
+        final canRent =
+            currentOrganizationId == organizationId &&
+            currentStatus == 'available' &&
+            !currentMaintenance &&
+            currentOwnerId.isEmpty;
+        if (!canRent) {
+          return Transaction.abort();
+        }
+        return Transaction.success({
+          ...currentLocker,
+          'status': 'rented',
+          'maintenance': false,
+          'ownerId': userId,
+          'ownerUid': userId,
+          'allowedRfidUID': rfidUid,
+          'lockState': 'locked',
+          'unlockRequest': false,
+          'organizationId': organizationId,
+          'organizationName': readable(
+            organizationData['name'],
+            organizationNameOf(userData),
+          ),
+          'hourlyPrice': organizationHourlyPrice(organizationData),
+          'organizationType': organizationTypeOf(organizationData),
+          'command': 'none',
+          'plan': selectedPlan,
+          'duration': duration,
+          'requestedAt': now.toIso8601String(),
+          'endsAt': endsAt.toIso8601String(),
+          'rentalStartAt': ServerValue.timestamp,
+          'rentalEndAt': endsAt.millisecondsSinceEpoch,
+          'rentalEndAtIso': endsAt.toIso8601String(),
+          'totalPaid': total,
+          'subtotal': subtotal,
+          'discount': discountAmount,
+          'coupon': appliedCoupon,
+          'penaltyPaid': 0,
+          'lastPenaltyCalculatedAt': now.toIso8601String(),
+        });
+      });
+      if (!rentalResult.committed) {
+        await refundBalanceIfNeeded(db, total);
+        showMessage('Locker is not available');
+        return;
+      }
       await ActivityLogService.write(
         organizationId: organizationId,
         actorId: userId,
