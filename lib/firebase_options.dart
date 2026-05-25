@@ -41,7 +41,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBoEo5CFd4A_qyWlpnyBnaJ2ac_cKbOTRA',
+    apiKey: 'FIREBASE_API _KEY ',
     appId: '1:871986626469:web:6792493483ed0ddceff24c',
     messagingSenderId: '871986626469',
     projectId: 'smart-locker-84032',
@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDVm3UGuDyfo8gznmyadghbNwKdpL9Ofv0',
+    apiKey: 'FIREBASE_API _KEY',
     appId: '1:871986626469:android:8ba70fea160db56aeff24c',
     messagingSenderId: '871986626469',
     projectId: 'smart-locker-84032',
@@ -62,7 +62,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDLtPYcYaim_HUZ79Vh-KWk9_XMa6LkHFc',
+    apiKey: 'FIREBASE_API _KEY',
     appId: '1:871986626469:ios:6551245f3a83bb01eff24c',
     messagingSenderId: '871986626469',
     projectId: 'smart-locker-84032',
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDLtPYcYaim_HUZ79Vh-KWk9_XMa6LkHFc',
+    apiKey: 'FIREBASE_API _KEY',
     appId: '1:871986626469:ios:6551245f3a83bb01eff24c',
     messagingSenderId: '871986626469',
     projectId: 'smart-locker-84032',
@@ -84,7 +84,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBoEo5CFd4A_qyWlpnyBnaJ2ac_cKbOTRA',
+    apiKey: 'FIREBASE_API_KEY ',
     appId: '1:871986626469:web:0623d2a0d3f7e68feff24c',
     messagingSenderId: '871986626469',
     projectId: 'smart-locker-84032',
