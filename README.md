@@ -194,18 +194,6 @@ Upload the firmware to the ESP32 using PlatformIO or Arduino IDE.
 
 ---
 
-## Future Improvements
-
-- NFC support
-- QR code access
-- Mobile application
-- Online payment integration
-- Multi-locker support
-- Reservation system
-- Improved security and access logs
-
----
-
 # Türkçe
 
 ## Smart Locker System
