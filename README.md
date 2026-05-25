@@ -108,7 +108,7 @@ smart_locker_system/
 ### Hardware Prototype
 
 ![Hardware Prototype](screenshots/hardware-prototype.jpg)
-![Hardware Prototype](screenshots/circuit-design.png)
+![Hardware Prototype](screenshots/circuit-designX.png)
 
 ---
 
